@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: group14
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: mydb
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./project.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:

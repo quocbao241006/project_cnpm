@@ -1,0 +1,6 @@
+psycopg2-binary
+bcrypt
+rich
+prompt-toolkit
+Pillow
+python-dotenv
