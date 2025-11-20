@@ -37,7 +37,7 @@ class CartRepository:
             self.connection.rollback()
     def get_cart_detail(self, _userID):
         try:
-            sql = '''select p.productName, p.images, cd.quantity, cd.unitprice, cd.cartdetailID, p.productID
+            sql = '''select p.productName, p.images, cd.quantity, cd.unitprice, cd.cartdetailID
                         from "cartdetail" as cd join "cart" as c on cd.cartID = c.cartID
                                 join "product" as p on cd.productID = p.productID
                         where c.userID = %s'''
@@ -51,7 +51,6 @@ class CartRepository:
                 cart_dict['quantity'] = item[2]
                 cart_dict['unitprice'] = item[3]
                 cart_dict['cartdetailID'] = item[4]
-                cart_dict['productID'] = item[5]
                 cart_detail.append(cart_dict)
             print(f"da tra ve gio hang cua nguoi dung {_userID}")
             return cart_detail

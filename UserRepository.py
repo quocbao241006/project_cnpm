@@ -28,7 +28,7 @@ class UserRepository:
             return False
     #===================================================================
     def authenticate_user(self, _email, _password):
-        sql = '''SELECT userID, username, user_role, password
+        sql = '''SELECT username, user_role, password
                     FROM "User" 
                     WHERE email = %s'''
         data = (_email,)
@@ -37,13 +37,9 @@ class UserRepository:
         if user_data is None:
             print(f"Lỗi đăng nhập thất bại, không tìm thấy Email: {_email}")
             return None
-        
-        # Lấy userID từ kết quả query
-        db_userID = user_data[0]
-        db_userName = user_data[1]
-        db_userRole = user_data[2]
-        db_hashed_password = user_data[3]
-        
+        db_userName = user_data[0]
+        db_userRole = user_data[1]
+        db_hashed_password = user_data[2]
         password_byte = _password.encode('utf-8')
         hashed_pw = db_hashed_password.encode('utf-8')
 
@@ -51,34 +47,12 @@ class UserRepository:
         if is_correct:
             print(f'Đăng nhập thành công vào tài khoản của: {db_userName}')
             return {
-                'userID': db_userID,
-                'username': db_userName,
-                'user_role': db_userRole
+            'username': db_userName,
+            'user_role': db_userRole
             }
         else:
             print(f"Lỗi đăng nhập: Sai mật khẩu của tài khoản {_email}")
             return None
-            
-    def get_user_by_id(self, user_id):
-        try:
-            sql = '''SELECT username, email, phonenumber, address, age, cccd, user_role FROM "User" WHERE userID = %s'''
-            self.cursor.execute(sql, (user_id,))
-            res = self.cursor.fetchone()
-            if res:
-                return {
-                    'username': res[0], 
-                    'email': res[1], 
-                    'phonenumber': res[2],
-                    'address': res[3], 
-                    'age': res[4], 
-                    'cccd': res[5],
-                    'user_role': res[6]
-                }
-            return None
-        except Exception as e:
-            print(f"Lỗi get_user_by_id: {e}")
-            return None
-
     #===========================================================
     def update_user_profile(self, _userID, _username, _phonenumber, _address, _age, _new_password,_cccd):    
         try:
@@ -87,7 +61,7 @@ class UserRepository:
                 password_bytes = _new_password.encode('utf-8')
                 hashed_password_bytes = bcrypt.hashpw(password_bytes, salt)
                 new_hashed_password = hashed_password_bytes.decode('utf-8')
-                sql = '''update "User" 
+                sql = '''update "user" 
                     set username = %s,
                         password = %s,
                         phonenumber = %s,
@@ -97,32 +71,23 @@ class UserRepository:
                     where userID = %s'''
                 self.cursor.execute(sql, (_username, new_hashed_password, _phonenumber, _address, _age, _cccd, _userID))
             else:
-                sql = '''update "User" 
+                sql = '''update "user" 
                     set username = %s,
                         phonenumber = %s,
                         address = %s,
                         age = %s,
-                        cccd = %s
+                        cccd = %s,
                     where userID = %s'''
                 self.cursor.execute(sql, (_username, _phonenumber, _address, _age, _cccd, _userID))
             self.connection.commit()
-            return True # Thêm return True để UI biết thành công
         except Exception as e:
-            print(f'lỗi update profile: {e}')
+            print(f'lỗi: {e}')
             self.connection.rollback()
-            return False
-            
     #==================================================================
     def send_otp(self, email):
         otp_code = f"{random.randint(0, 999999):06d}"
         otp_expires_at = datetime.datetime.now() + datetime.timedelta(minutes=5)
         try:
-            # Kiểm tra xem email có tồn tại không trước khi update
-            check_sql = 'SELECT 1 FROM "User" WHERE email = %s'
-            self.cursor.execute(check_sql, (email,))
-            if not self.cursor.fetchone():
-                return False
-
             sql = '''UPDATE "User"
                      SET otp_code = %s,
                          otp_expires_at = %s
@@ -131,12 +96,13 @@ class UserRepository:
             self.cursor.execute(sql, (otp_code, otp_expires_at, email))  
             self.connection.commit()         
             print(f"Giả lập: Đã gửi OTP thành công tới email {email}. (OTP: {otp_code})")
-            # print(f"Thời gian hết hạn: {otp_expires_at}")
+            print(f"Thời gian hết hạn: {otp_expires_at}")
             return True  
         except Exception as e:
             self.connection.rollback()
             print(f"Lỗi hệ thống khi tạo OTP: {e}")
             return False
+    import datetime # Cần thiết cho việc kiểm tra thời gian hết hạn
 
 #========================================..
 
@@ -145,30 +111,20 @@ class UserRepository:
             sql_select = '''SELECT otp_code, otp_expires_at FROM "User" WHERE email = %s'''
             self.cursor.execute(sql_select, (email,))
             otp_data = self.cursor.fetchone()
-            
             if otp_data is None:
-                return False # Email không tồn tại
-
+                return True 
             otp_code_from_db = otp_data[0]
             otp_expires_at = otp_data[1]
-            
             if otp_code_from_db is None or otp_expires_at is None:
-                 print("Chưa có OTP.")
-                 return False
-                 
+                 raise Exception("Bạn chưa gửi yêu cầu reset mật khẩu.")
             if otp_expires_at < datetime.datetime.now():
-                 print("OTP hết hạn.")
-                 return False
-                 
+                 raise Exception("Mã OTP đã hết hạn. Vui lòng gửi yêu cầu mới.")
             if otp_code_from_db != otp_code_input:
-                 print("OTP sai.")
-                 return False
-
+                 raise Exception("Mã OTP không đúng.")
             salt = bcrypt.gensalt()
             password_bytes = new_password_plain.encode('utf-8')
             hashed_password_bytes = bcrypt.hashpw(password_bytes, salt)
             new_hashed_password = hashed_password_bytes.decode('utf-8')
-            
             sql_update = '''UPDATE "User"
                             SET password = %s,
                                 otp_code = NULL,
@@ -220,6 +176,33 @@ class UserRepository:
         except Exception as e:
             print(f"Lỗi khi truy xuất danh sách người dùng cho Admin: {e}")
             return []
+    #==================================================
+    def get_user_by_id(self, _userID):
+        try:
+            sql = '''SELECT userID, username, email, phonenumber, address, age, cccd, user_role, is_active 
+                     FROM "User" 
+                     WHERE userID = %s'''
+            
+            self.cursor.execute(sql, (_userID,))
+            row = self.cursor.fetchone()
+            
+            if row:
+                return {
+                    'userID': row[0],
+                    'username': row[1],
+                    'email': row[2],
+                    'phonenumber': row[3],
+                    'address': row[4],
+                    'age': row[5],
+                    'cccd': row[6],
+                    'user_role': row[7],
+                    'is_active': row[8] # Lấy cả trạng thái khóa
+                }
+            return None
+        except Exception as e:
+            print(f"Lỗi lấy thông tin user ID {_userID}: {e}")
+            return None
+        
     def admin_update_user_status(self, target_userID, new_username, new_role, new_phone, new_address, new_age, new_cccd):
         try:
             sql = '''UPDATE "User" 
@@ -254,19 +237,21 @@ class UserRepository:
             return False
     def admin_delete_user(self, target_userID):
         try:
-            sql = '''DELETE FROM "User" WHERE userID = %s'''
+            sql = '''UPDATE "User" 
+                     SET is_active = FALSE
+                     WHERE userID = %s'''
             
             self.cursor.execute(sql, (target_userID,))
         
             if self.cursor.rowcount == 0:
                 self.connection.rollback()
-                raise Exception(f"Không tìm thấy người dùng ID: {target_userID} để xóa.")
+                raise Exception(f"Không tìm thấy người dùng ID: {target_userID} để khóa.")
 
             self.connection.commit()
-            print(f"✅ Admin: Xóa tài khoản User ID {target_userID} thành công.")
+            print(f"✅ Admin: Khóa tài khoản User ID {target_userID} thành công.")
             return True
 
         except Exception as e:
             self.connection.rollback()
-            print(f"❌ LỖI HỆ THỐNG/SQL: Không thể xóa tài khoản: {e}")
+            print(f"❌ LỖI HỆ THỐNG/SQL: Không thể khóa tài khoản: {e}")
             return False

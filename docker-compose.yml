@@ -12,10 +12,9 @@ services:
       TZ: Asia/Ho_Chi_Minh
       PGTZ: Asia/Ho_Chi_Minh
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./project.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   postgres_data:
