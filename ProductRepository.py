@@ -5,9 +5,10 @@ class ProductRepository:
         self.cursor = self.connection.cursor()
         print("ProductRepository đã được khởi tạo")
         pass
+    #=======================================================================================
     def get_all_product(self):
         try:
-            sql = '''SELECT productID, productName, description, price, number_of_sale, images, stock_quantity  FROM "product" '''
+            sql = '''SELECT productID, productName, description, price, product_code, number_of_sale, images, stock_quantity  FROM "product" ORDER BY productID ASC'''
             self.cursor.execute(sql)
             list_product = self.cursor.fetchall()
             product = []            
@@ -25,6 +26,85 @@ class ProductRepository:
         except Exception as e:
             print(f"lôi khi lấy danh sách: {e}")
             return []
+    #===============================================================================================================
+    def get_product_by_id(self, _productID):
+        try:
+            # Chỉ SELECT từ bảng product. Đủ 100% thông tin bạn cần.
+            sql = '''SELECT productID, productName, description, product_code, 
+                            price, stock_quantity, number_of_sale, images, categoryID
+                     FROM "product" 
+                     WHERE productID = %s
+                     ORDER BY productID'''
+            
+            self.cursor.execute(sql, (_productID,))
+            result = self.cursor.fetchone()
+            
+            if result:
+                return {
+                    'productID': result[0],
+                    'productName': result[1],
+                    'description': result[2],
+                    'product_code': result[3],
+                    'price': result[4],
+                    'stock_quantity': result[5],
+                    'number_of_sale': result[6],
+                    'images': result[7],
+                    'categoryID': result[8] 
+                }
+            return None # Không tìm thấy
+
+        except Exception as e:
+            print(f"Lỗi lấy sản phẩm ID {_productID}: {e}")
+            return None
+    #===============================================================================================================
+    def get_product_by_categoryID(self, _categoryID):
+        try:
+            sql = '''SELECT productID, productName, description, product_code, price, stock_quantity, images
+                        from "product" 
+                        where categoryID = %s
+                        order by productID'''
+            self.cursor.execute(sql,(_categoryID,))
+            result = self.cursor.fetchall()
+            products_list = [] 
+            
+            for item in result:
+                products_list.append({
+                    'productID': item[0],
+                    'productName': item[1],
+                    'description': item[2],
+                    'product_code': item[3],
+                    'price': item[4],
+                    'stock_quantity': item[5],
+                    'images': item[6]
+                })
+            return products_list
+        except Exception as e:
+            print(f'loi: {e}')
+            return []
+    #===============================================================================================================
+    def delete_product(self, _productID):
+        try:
+            sql_check = 'SELECT COUNT(*) FROM "orderdetail" WHERE productID = %s'
+            self.cursor.execute(sql_check, (_productID,))
+            count = self.cursor.fetchone()[0]
+            
+            if count > 0:
+                raise Exception(f"Không thể xóa: Sản phẩm này đang nằm trong {count} đơn hàng lịch sử.")
+
+            sql_delete = 'DELETE FROM "product" WHERE productID = %s'
+            self.cursor.execute(sql_delete, (_productID,))
+            if self.cursor.rowcount == 0:
+                raise Exception(f"Không tìm thấy sản phẩm ID {_productID} để xóa.")
+
+            self.connection.commit()
+            print(f"✅ Đã xóa thành công sản phẩm ID {_productID}")
+            return True
+
+        except Exception as e:
+            self.connection.rollback()
+            print(f"❌ Lỗi xóa sản phẩm: {e}")
+            return False       
+    #===============================================================================================================
     def search_product(self, keyword):
         try:
             search_pattern = f"%{keyword}%"
@@ -46,6 +126,7 @@ class ProductRepository:
         except Exception as e:
             print(f"Lỗi search đơn hàng: {e}")
             return []
+    #===================================================================================================================
     def add_new_product(self,_productName, _categoryID, _productCode, _description, _price, _stock_quantity, _images):
         try:
             if _price <= 0 or _stock_quantity < 0:
@@ -62,6 +143,7 @@ class ProductRepository:
             print(f"loi insert table product: {e}")
             self.connection.rollback()
             return None
+    #=============================================================================================================================
     def update_product(self, _productID, _newName, _newCategoryID, _newProductCode, _newDesc,_newPrice, _newStock, _newImages):
         try:
             if _newPrice <= 0: # Giá phải lớn hơn 0
@@ -148,59 +230,3 @@ class ProductRepository:
             print(f"lỗi không thể xóa: {e}")    
             self.connection.rollback()
     #================================================================
-    def get_product_by_categoryID(self, categoryID):
-        try:
-            sql = '''SELECT productID, productName, description, price, number_of_sale, images, stock_quantity, product_code 
-                     FROM product WHERE categoryID = %s'''
-            self.cursor.execute(sql, (categoryID,))
-            result = self.cursor.fetchall()
-            products = []
-            for row in result:
-                products.append({
-                    'productID': row[0],
-                    'productName': row[1],
-                    'description': row[2],
-                    'price': row[3],
-                    'number_of_sale': row[4],
-                    'images': row[5],
-                    'stock_quantity': row[6],
-                    'product_code': row[7]
-                })
-            return products
-        except Exception as e:
-            print(f"Lỗi lấy SP theo danh mục: {e}")
-            return []
-
-    def get_product_by_id(self, productID):
-        try:
-            sql = '''SELECT productID, productName, description, price, number_of_sale, images, stock_quantity, product_code, categoryID
-                     FROM product WHERE productID = %s'''
-            self.cursor.execute(sql, (productID,))
-            row = self.cursor.fetchone()
-            if row:
-                return {
-                    'productID': row[0],
-                    'productName': row[1],
-                    'description': row[2],
-                    'price': row[3],
-                    'number_of_sale': row[4],
-                    'images': row[5],
-                    'stock_quantity': row[6],
-                    'product_code': row[7],
-                    'categoryID': row[8]
-                }
-            return None
-        except Exception as e:
-            print(f"Lỗi lấy chi tiết SP: {e}")
-            return None
-            
-    def delete_product(self, productID):
-        try:
-            sql = '''DELETE FROM product WHERE productID = %s'''
-            self.cursor.execute(sql, (productID,))
-            self.connection.commit()
-            return True
-        except Exception as e:
-            print(f"Lỗi xóa SP: {e}")
-            self.connection.rollback()
-            return False

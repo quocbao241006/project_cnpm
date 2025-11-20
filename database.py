@@ -6,7 +6,8 @@ def db_connection():
             user = "group14",
             password = "1234",
             host = "localhost",
-            port = "5433"
+            port = "5432",
+            client_encoding='UTF8'
         )
         print("Kết nối thành công")
         return conn
