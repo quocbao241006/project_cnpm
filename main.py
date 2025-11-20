@@ -247,7 +247,8 @@ def main():
                 
                 if role == 'Admin':
                     # Vào UI Admin
-                    ui_admin.handle_admin_menu(user_repo, product_repo, order_repo)
+                    admin_app = ui_admin.Admin(conn) 
+                    admin_app.mainView()
                 else:
                     # Vào UI Member
                     handle_member_dashboard(user_session, product_repo, cart_repo, user_repo, order_repo)

@@ -61,17 +61,18 @@ class UserRepository:
             
     def get_user_by_id(self, user_id):
         try:
-            sql = '''SELECT username, email, phonenumber, address, age, cccd FROM "User" WHERE userID = %s'''
+            sql = '''SELECT username, email, phonenumber, address, age, cccd, user_role FROM "User" WHERE userID = %s'''
             self.cursor.execute(sql, (user_id,))
             res = self.cursor.fetchone()
             if res:
                 return {
                     'username': res[0], 
                     'email': res[1], 
-                    'phone': res[2],
+                    'phonenumber': res[2],
                     'address': res[3], 
                     'age': res[4], 
-                    'cccd': res[5]
+                    'cccd': res[5],
+                    'user_role': res[6]
                 }
             return None
         except Exception as e:

@@ -174,7 +174,7 @@ def handle_update_profile_menu(current_user, user_repo):
             return
 
         console.print(f"Username: [green]{info['username']}[/green]")
-        console.print(f"SĐT: {info['phone']}")
+        console.print(f"SĐT: {info['phonenumber']}")
         console.print(f"Địa chỉ: {info['address']}")
         console.print(f"Tuổi: {info['age']}")
         
@@ -184,7 +184,7 @@ def handle_update_profile_menu(current_user, user_repo):
         if input("Chọn: ").strip() == '1':
             print("\n--- Nhập thông tin mới (Enter để giữ nguyên) ---")
             new_user = input(f"Username ({info['username']}): ").strip() or info['username']
-            new_phone = input(f"SĐT ({info['phone']}): ").strip() or info['phone']
+            new_phone = input(f"SĐT ({info['phonenumber']}): ").strip() or info['phone']
             new_addr = input(f"Địa chỉ ({info['address']}): ").strip() or info['address']
             new_age = input(f"Tuổi ({info['age']}): ").strip() or str(info['age'])
             new_cccd = input(f"CCCD ({info['cccd']}): ").strip() or info['cccd']

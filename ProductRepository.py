@@ -148,3 +148,59 @@ class ProductRepository:
             print(f"lỗi không thể xóa: {e}")    
             self.connection.rollback()
     #================================================================
+    def get_product_by_categoryID(self, categoryID):
+        try:
+            sql = '''SELECT productID, productName, description, price, number_of_sale, images, stock_quantity, product_code 
+                     FROM product WHERE categoryID = %s'''
+            self.cursor.execute(sql, (categoryID,))
+            result = self.cursor.fetchall()
+            products = []
+            for row in result:
+                products.append({
+                    'productID': row[0],
+                    'productName': row[1],
+                    'description': row[2],
+                    'price': row[3],
+                    'number_of_sale': row[4],
+                    'images': row[5],
+                    'stock_quantity': row[6],
+                    'product_code': row[7]
+                })
+            return products
+        except Exception as e:
+            print(f"Lỗi lấy SP theo danh mục: {e}")
+            return []
+
+    def get_product_by_id(self, productID):
+        try:
+            sql = '''SELECT productID, productName, description, price, number_of_sale, images, stock_quantity, product_code, categoryID
+                     FROM product WHERE productID = %s'''
+            self.cursor.execute(sql, (productID,))
+            row = self.cursor.fetchone()
+            if row:
+                return {
+                    'productID': row[0],
+                    'productName': row[1],
+                    'description': row[2],
+                    'price': row[3],
+                    'number_of_sale': row[4],
+                    'images': row[5],
+                    'stock_quantity': row[6],
+                    'product_code': row[7],
+                    'categoryID': row[8]
+                }
+            return None
+        except Exception as e:
+            print(f"Lỗi lấy chi tiết SP: {e}")
+            return None
+            
+    def delete_product(self, productID):
+        try:
+            sql = '''DELETE FROM product WHERE productID = %s'''
+            self.cursor.execute(sql, (productID,))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            print(f"Lỗi xóa SP: {e}")
+            self.connection.rollback()
+            return False

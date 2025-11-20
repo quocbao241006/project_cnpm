@@ -151,3 +151,72 @@ class OrderRepository:
             self.connection.rollback()
             print(f"Lỗi hủy đơn: {e}")
             return False
+    def get_order_details_items(self, orderID):
+        try:
+            # Join bảng orderdetail với product để lấy tên và ảnh
+            # Join bảng "Order" để lấy status
+            sql = '''
+                SELECT p.productName, p.images, od.quantity, od.unitPrice, o.status
+                FROM orderdetail od
+                JOIN product p ON od.productID = p.productID
+                JOIN "Order" o ON od.orderID = o.orderID
+                WHERE od.orderID = %s
+            '''
+            self.cursor.execute(sql, (orderID,))
+            result = self.cursor.fetchall()
+            details = []
+            for row in result:
+                details.append({
+                    'productName': row[0],
+                    'images': row[1],
+                    'quantity': row[2],
+                    'unitPrice': row[3],
+                    'orderStatus': row[4] # Lấy trạng thái để hiển thị ở UI
+                })
+            return details
+        except Exception as e:
+            print(f"Lỗi lấy chi tiết đơn hàng: {e}")
+            return []
+    def get_all_orders(self):
+        try:
+            sql = '''SELECT o.orderID,
+                            o.orderDate,
+                            o.totalAmount,
+                            o.status,
+                            u.username
+                    FROM "Order" AS o
+                    JOIN "User" AS u ON o.userID = u.userID
+                    ORDER BY o.orderDate DESC'''
+            self.cursor.execute(sql)
+            result = self.cursor.fetchall()
+            orders = []
+            for item in result:
+                orders.append({
+                    'orderID': item[0],
+                    'orderDate': item[1],
+                    'totalAmount': item[2],
+                    'status': item[3],
+                    'userName': item[4]
+                })
+            return orders
+        except Exception as e:
+            print(f"Lỗi get_all_orders: {e}")
+            return []
+    def update_orders_status(self, orderID, newStatus):
+        try:
+            sql = '''UPDATE "Order"
+                    SET status = %s 
+                    WHERE orderID = %s'''
+            self.cursor.execute(sql, (newStatus, orderID))
+            
+            if self.cursor.rowcount == 0:
+                print(f"Cảnh báo: Không tìm thấy đơn hàng ID {orderID}")
+                return False
+                
+            self.connection.commit()
+            print(f"Đã update status cho đơn hàng {orderID}")
+            return True
+        except Exception as e:
+            print(f"Lỗi update_orders_status: {e}")
+            self.connection.rollback()
+            return False

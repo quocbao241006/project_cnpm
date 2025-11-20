@@ -90,6 +90,7 @@ def handle_view_products(current_user, product_repo, cart_repo):
         clear()
         console.print("[bold cyan]DANH SÁCH SẢN PHẨM (UC-5)[/bold cyan]")
         
+        # Lấy danh sách sản phẩm ban đầu hoặc sau khi quay lại từ tìm kiếm
         products = product_repo.get_all_product()
         
         if not products:
@@ -122,12 +123,58 @@ def handle_view_products(current_user, product_repo, cart_repo):
         if choice == '0':
             break
         elif choice == 's':
+            # --- BẮT ĐẦU PHẦN ĐIỀU CHỈNH/THÊM VÀO ---
+            clear()
+            console.print("[bold cyan]TÌM KIẾM SẢN PHẨM[/bold cyan]")
             kw = input("Nhập từ khóa: ")
             results = product_repo.search_product(kw)
-            console.print(f"Tìm thấy {len(results)} kết quả.")
-            console.input("Enter...")
+            
+            console.print(f"\n[bold yellow]Tìm thấy {len(results)} kết quả cho từ khóa: '{kw}'[/bold yellow]\n")
+
+            if results:
+                # Tái sử dụng/Tạo lại bảng để hiển thị kết quả tìm kiếm
+                search_table = Table(show_header=True, header_style="bold blue")
+                search_table.add_column("ID", style="dim", width=5)
+                search_table.add_column("Tên sản phẩm", min_width=20)
+                search_table.add_column("Giá", justify="right", style="green")
+                search_table.add_column("Kho", justify="right")
+                
+                # Cập nhật danh sách ID hợp lệ CHỈ VỚI kết quả tìm kiếm
+                search_valid_ids = []
+                for p in results:
+                    search_valid_ids.append(str(p['productID']))
+                    search_table.add_row(
+                        str(p['productID']),
+                        p['productName'],
+                        f"{float(p['price']):,.0f} đ",
+                        str(p['stock_quantity'])
+                    )
+                
+                console.print(search_table)
+                console.print("\n[bold yellow]Nhập ID sản phẩm để xem chi tiết[/bold yellow]")
+                console.print("[dim](Gõ '0' để quay lại màn hình danh sách)[/dim]")
+
+                # Logic xử lý lựa chọn sau khi tìm kiếm
+                search_choice = input("Lựa chọn: ").strip().lower()
+                
+                if search_choice == '0':
+                    # Quay lại vòng lặp chính để hiển thị danh sách đầy đủ
+                    continue 
+                elif search_choice in search_valid_ids:
+                    # Tìm sản phẩm trong danh sách kết quả (results)
+                    selected_p = next((p for p in results if str(p['productID']) == search_choice), None)
+                    if selected_p:
+                        # Giả định `view_product_detail` được định nghĩa ở đâu đó
+                        view_product_detail(current_user, selected_p, cart_repo)
+                        
+            else:
+                console.print("[red]Không tìm thấy sản phẩm nào phù hợp.[/red]")
+                
+            console.input("\nNhấn Enter để quay lại danh sách sản phẩm...")
+            # --- KẾT THÚC PHẦN ĐIỀU CHỈNH/THÊM VÀO ---
             
         elif choice in valid_ids:
             selected_p = next((p for p in products if str(p['productID']) == choice), None)
             if selected_p:
+                # Giả định `view_product_detail` được định nghĩa ở đâu đó
                 view_product_detail(current_user, selected_p, cart_repo)
